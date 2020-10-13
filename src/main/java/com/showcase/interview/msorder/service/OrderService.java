@@ -35,6 +35,10 @@ public class OrderService {
 	private OrderDetailService orderDetailService;
 	
 	@Autowired
+	private InventoryRestService inventoryRestService;
+
+	
+	@Autowired
 	private final RabbitTemplate rabbitTemplate;
 	
 	@Autowired
@@ -52,7 +56,9 @@ public class OrderService {
 			Order result = orderRepository.save(newData);
 			BigDecimal totalAmount = BigDecimal.valueOf(0);
 			for (OrderDetail orderDetail : newData.getOrderDetail()) {
-				orderDetail.setBasePrice(BigDecimal.valueOf(50000));
+				
+				ReservedInventory itemBase = inventoryRestService.getPostWithUrlParameters(orderDetail.getItem_id());
+				orderDetail.setBasePrice(itemBase.getPrice());
 				orderDetail.setOrder(result);
 				orderDetail.setTotal();
 				totalAmount = totalAmount.add(orderDetail.getTotal());

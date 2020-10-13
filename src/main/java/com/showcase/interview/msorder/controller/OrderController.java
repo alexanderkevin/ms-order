@@ -22,7 +22,7 @@ import com.showcase.interview.msorder.service.OrderService;
 
 @Controller
 @CrossOrigin(origins = "*", allowedHeaders = "*")
-@RequestMapping(value = "/api/v1/microservice/order", produces = { "application/json" })
+@RequestMapping(value = "/api/v1/ms-order/order", produces = { "application/json" })
 public class OrderController {
 	@Autowired
 	private OrderService orderService;
