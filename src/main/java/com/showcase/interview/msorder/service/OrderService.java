@@ -2,14 +2,19 @@ package com.showcase.interview.msorder.service;
 
 import java.math.BigDecimal;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import com.showcase.interview.msorder.exception.CommitFailedException;
 import com.showcase.interview.msorder.exception.DataNotFoundException;
 import com.showcase.interview.msorder.exception.UndefinedException;
+import com.showcase.interview.msorder.model.ReservedInventory;
 import com.showcase.interview.msorder.model.Order;
 import com.showcase.interview.msorder.model.OrderDetail;
 import com.showcase.interview.msorder.repository.OrderRepository;
@@ -19,18 +24,28 @@ import com.showcase.interview.msorder.utils.Util;
 @Service
 public class OrderService {
 
+	
+	public OrderService(RabbitTemplate rabbitTemplate) {
+		super();
+		this.rabbitTemplate = rabbitTemplate;
+	}
+
 	@Autowired
 	private OrderRepository orderRepository;
 
 	@Autowired
 	private OrderDetailService orderDetailService;
-
+	
+	@Autowired
+	private final RabbitTemplate rabbitTemplate;
+	
 	@Autowired
 	private Util util;
 
 	public Iterable<Order> getAll() {
 		return orderRepository.findAll();
 	}
+	
 
 	public Order createNew(Order newData) throws CommitFailedException, UndefinedException {
 		try {
@@ -44,6 +59,13 @@ public class OrderService {
 				orderDetail.setTotal();
 				totalAmount = totalAmount.add(orderDetail.getTotal());
 				orderDetailService.createNew(orderDetail);
+//				insert to queue to reserve QTY
+				ReservedInventory newInventory = new ReservedInventory();
+				newInventory.setQuantity(orderDetail.getQty());
+				System.err.println(orderDetail.getItem_id());
+				newInventory.setId(orderDetail.getItem_id());
+				System.err.println(newInventory.getId());
+				this.rabbitTemplate.convertSendAndReceive("reserve-inventory", "update", newInventory);
 			}
 			result.setTotalAmount(totalAmount);
 			return orderRepository.save(newData);

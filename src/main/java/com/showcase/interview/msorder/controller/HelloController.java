@@ -6,9 +6,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.showcase.interview.msorder.MsOrderApplication;
+import com.showcase.interview.msorder.model.ReservedInventory;
+import com.showcase.interview.msorder.model.Order;
 import com.showcase.interview.msorder.utils.SuccessTemplateMessage;
 
 @RestController
@@ -25,9 +31,9 @@ public class HelloController {
 		this.rabbitTemplate = new RabbitTemplate();
 	}
 
-	@GetMapping("/send-message")
-	public ResponseEntity<Object> SendMessage() {
-		this.rabbitTemplate.convertAndSend(MsOrderApplication.topicExchangeName, MsOrderApplication.routingKey, "Hello from Order MS!");
+	@PutMapping("/{id}/send-updated-data")
+	public ResponseEntity<Object> SendMessage(@RequestBody ReservedInventory newInventory, @PathVariable Long id) {
+		this.rabbitTemplate.convertSendAndReceive("reserve-inventory", "update", newInventory);
 		return new ResponseEntity<Object>(new SuccessTemplateMessage(), HttpStatus.OK);
 	}
 

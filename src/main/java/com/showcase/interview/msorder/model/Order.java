@@ -24,7 +24,6 @@ public class Order extends BaseModel {
 
 	private BigDecimal totalAmount;
 	
-	@Column(nullable = false)
 	private String currency;
 
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
