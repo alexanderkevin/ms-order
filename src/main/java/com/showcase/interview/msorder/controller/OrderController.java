@@ -51,6 +51,11 @@ public class OrderController {
 	public @ResponseBody Order updateData(@RequestBody Order newOrder, @PathVariable Long id) {
 		return orderService.updateById(newOrder, id);
 	}
+	
+	@PutMapping("/{id}/update-status")
+	public @ResponseBody Order updateStatus(@RequestBody Order newOrder, @PathVariable Long id) {
+		return orderService.updateStatusById(newOrder, id);
+	}
 
 	@GetMapping("/all")
 	public @ResponseBody Iterable<Order> getAll() {

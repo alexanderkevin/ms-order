@@ -7,9 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import com.showcase.interview.msorder.exception.CommitFailedException;
 import com.showcase.interview.msorder.exception.DataNotFoundException;
@@ -17,6 +14,7 @@ import com.showcase.interview.msorder.exception.UndefinedException;
 import com.showcase.interview.msorder.model.ReservedInventory;
 import com.showcase.interview.msorder.model.Order;
 import com.showcase.interview.msorder.model.OrderDetail;
+import com.showcase.interview.msorder.model.PaymentRequest;
 import com.showcase.interview.msorder.repository.OrderRepository;
 import com.showcase.interview.msorder.utils.SuccessTemplateMessage;
 import com.showcase.interview.msorder.utils.Util;
@@ -59,14 +57,20 @@ public class OrderService {
 				orderDetail.setTotal();
 				totalAmount = totalAmount.add(orderDetail.getTotal());
 				orderDetailService.createNew(orderDetail);
+				
 //				insert to queue to reserve QTY
 				ReservedInventory newInventory = new ReservedInventory();
 				newInventory.setQuantity(orderDetail.getQty());
-				System.err.println(orderDetail.getItem_id());
 				newInventory.setId(orderDetail.getItem_id());
-				System.err.println(newInventory.getId());
-				this.rabbitTemplate.convertSendAndReceive("reserve-inventory", "update", newInventory);
+				this.rabbitTemplate.convertSendAndReceive("ms-inventory-queue", newInventory);
 			}
+//			Insert to queue to request payment
+			PaymentRequest newPaymentRequest =  new PaymentRequest();
+			newPaymentRequest.setAmount(totalAmount);
+			newPaymentRequest.setCurrency(newData.getCurrency());
+			newPaymentRequest.setOrderId(result.getId());
+			newPaymentRequest.setStatus("WAITING_FOR_PAYMENT");
+			this.rabbitTemplate.convertSendAndReceive("ms-payment-queue", newPaymentRequest);
 			result.setTotalAmount(totalAmount);
 			return orderRepository.save(newData);
 		} catch (Exception e) {
@@ -89,6 +93,19 @@ public class OrderService {
 			updatedData.setCreated_at(data.getCreated_at());
 			data = updatedData;
 
+			data.setUpdated_at(util.getTimeNow());
+			return orderRepository.save(data);
+		}).orElseGet(() -> {
+			updatedData.setCreated_at(util.getTimeNow());
+			updatedData.setUpdated_at(util.getTimeNow());
+			return orderRepository.save(updatedData);
+		});
+	}
+	
+	public Order updateStatusById(Order updatedData, Long id) {
+
+		return orderRepository.findById(id).map(data -> {
+			data.setStatus(updatedData.getStatus());
 			data.setUpdated_at(util.getTimeNow());
 			return orderRepository.save(data);
 		}).orElseGet(() -> {

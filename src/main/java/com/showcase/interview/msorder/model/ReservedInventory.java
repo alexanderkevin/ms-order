@@ -1,9 +1,6 @@
 package com.showcase.interview.msorder.model;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
-
-public class ReservedInventory extends BaseModel implements Serializable {
+public class ReservedInventory extends BaseModel{
 
 	private Long id;
 
