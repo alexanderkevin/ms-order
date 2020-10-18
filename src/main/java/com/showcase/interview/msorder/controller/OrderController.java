@@ -18,6 +18,8 @@ import com.showcase.interview.msorder.exception.CommitFailedException;
 import com.showcase.interview.msorder.exception.DataNotFoundException;
 import com.showcase.interview.msorder.exception.UndefinedException;
 import com.showcase.interview.msorder.model.Order;
+import com.showcase.interview.msorder.model.OrderFilter;
+import com.showcase.interview.msorder.repository.OrderRepository;
 import com.showcase.interview.msorder.service.OrderService;
 
 @Controller
@@ -27,6 +29,9 @@ public class OrderController {
 	@Autowired
 	private OrderService orderService;
 
+	@Autowired
+	private OrderRepository orderRepository;
+	
 	@PostMapping("/create")
 	public @ResponseBody Order createNew(@RequestBody Order newOrder) {
 		try {
@@ -37,6 +42,19 @@ public class OrderController {
 			throw new ResponseStatusException(e.getStatus(), e.getMessage());
 		}
 	}
+	
+	@PostMapping("/customFilter")
+	public @ResponseBody Iterable<Order> customFilter(@RequestBody OrderFilter orderFilter) {
+			System.out.println(orderFilter.getCurrency());
+			return orderRepository.filterCustomOrder(
+					orderFilter.getCurrency(),
+					orderFilter.getPriceMin(),
+					orderFilter.getPriceMax(),
+					orderFilter.getQtyMin(),
+					orderFilter.getQtyMax());
+
+	}
+
 
 	@GetMapping("/{id}/detail")
 	public @ResponseBody Order findById(@PathVariable Long id) {
